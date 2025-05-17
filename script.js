@@ -14,11 +14,12 @@ let rotatingAroundFire = true;
 
 let lastTimestamp = 0;
 
+const planetRadius = 40;
+const orbitRadius = 80; // distance between planets
+
+// Positions of the planets (fixed)
 let firePlanetPos = { x: 0, y: 0 };
 let icePlanetPos = { x: 0, y: 0 };
-
-const planetRadius = 40;
-const orbitRadius = 80; // closer planets
 
 function resizeCanvas() {
   const size = Math.min(window.innerWidth * 0.9, 600);
@@ -27,63 +28,71 @@ function resizeCanvas() {
 
   centerX = canvas.width / 2;
   centerY = canvas.height / 2;
+
+  // Set the planets initial fixed positions:
+  // Let's place them horizontally apart in the middle
+  firePlanetPos = { x: centerX - orbitRadius / 2, y: centerY };
+  icePlanetPos = { x: centerX + orbitRadius / 2, y: centerY };
 }
 
-function drawPlanets() {
+function drawPlanets(rotAngle) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Draw orbit circle between the two planets for effect (optional)
+  ctx.strokeStyle = "#555";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, orbitRadius / 2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Calculate rotating planet position
+  // rotatingAroundFire === true means Ice orbits Fire
+  // rotatingAroundFire === false means Fire orbits Ice
+
+  let rotatingPlanetPos;
+
   if (rotatingAroundFire) {
-    firePlanetPos = { x: centerX, y: centerY };
-    icePlanetPos = {
-      x: centerX + Math.cos(rotationAngle) * orbitRadius,
-      y: centerY + Math.sin(rotationAngle) * orbitRadius,
+    // Fire is center, ice rotates around firePlanetPos
+    rotatingPlanetPos = {
+      x: firePlanetPos.x + Math.cos(rotAngle) * orbitRadius,
+      y: firePlanetPos.y + Math.sin(rotAngle) * orbitRadius,
     };
+
+    // Draw fire at fixed position
+    drawPlanet(firePlanetPos.x, firePlanetPos.y, planetRadius, true);
+    // Draw ice at rotating position
+    drawPlanet(rotatingPlanetPos.x, rotatingPlanetPos.y, planetRadius, false);
   } else {
-    icePlanetPos = { x: centerX, y: centerY };
-    firePlanetPos = {
-      x: centerX + Math.cos(rotationAngle) * orbitRadius,
-      y: centerY + Math.sin(rotationAngle) * orbitRadius,
+    // Ice is center, fire rotates around icePlanetPos
+    rotatingPlanetPos = {
+      x: icePlanetPos.x + Math.cos(rotAngle) * orbitRadius,
+      y: icePlanetPos.y + Math.sin(rotAngle) * orbitRadius,
     };
+
+    // Draw ice at fixed position
+    drawPlanet(icePlanetPos.x, icePlanetPos.y, planetRadius, false);
+    // Draw fire at rotating position
+    drawPlanet(rotatingPlanetPos.x, rotatingPlanetPos.y, planetRadius, true);
+  }
+}
+
+function drawPlanet(x, y, radius, isFire) {
+  const gradient = ctx.createRadialGradient(x - 10, y - 10, 5, x, y, radius);
+  if (isFire) {
+    gradient.addColorStop(0, "#ff5a36");
+    gradient.addColorStop(1, "#a1331f");
+    ctx.shadowColor = "#ff6f3d";
+  } else {
+    gradient.addColorStop(0, "#36c2ff");
+    gradient.addColorStop(1, "#1b3c6f");
+    ctx.shadowColor = "#4dc7ff";
   }
 
-  // Fire planet
-  const fireGradient = ctx.createRadialGradient(
-    firePlanetPos.x - 10,
-    firePlanetPos.y - 10,
-    5,
-    firePlanetPos.x,
-    firePlanetPos.y,
-    planetRadius
-  );
-  fireGradient.addColorStop(0, "#ff5a36");
-  fireGradient.addColorStop(1, "#a1331f");
-
-  ctx.fillStyle = fireGradient;
-  ctx.shadowColor = "#ff6f3d";
+  ctx.fillStyle = gradient;
   ctx.shadowBlur = 20;
   ctx.beginPath();
-  ctx.arc(firePlanetPos.x, firePlanetPos.y, planetRadius, 0, Math.PI * 2);
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fill();
-
-  // Ice planet
-  const iceGradient = ctx.createRadialGradient(
-    icePlanetPos.x - 10,
-    icePlanetPos.y - 10,
-    5,
-    icePlanetPos.x,
-    icePlanetPos.y,
-    planetRadius
-  );
-  iceGradient.addColorStop(0, "#36c2ff");
-  iceGradient.addColorStop(1, "#1b3c6f");
-
-  ctx.fillStyle = iceGradient;
-  ctx.shadowColor = "#4dc7ff";
-  ctx.shadowBlur = 20;
-  ctx.beginPath();
-  ctx.arc(icePlanetPos.x, icePlanetPos.y, planetRadius, 0, Math.PI * 2);
-  ctx.fill();
-
   ctx.shadowBlur = 0;
 }
 
@@ -96,7 +105,7 @@ function animate(timestamp) {
 
   rotationAngle += rotationSpeed * delta;
 
-  drawPlanets();
+  drawPlanets(rotationAngle);
 
   requestAnimationFrame(animate);
 }
@@ -107,7 +116,7 @@ function startGame() {
     startScreen.style.display = "none";
     canvas.style.display = "block";
     resizeCanvas();
-    drawPlanets();
+    drawPlanets(rotationAngle);
     requestAnimationFrame(animate);
   }
 }
@@ -123,13 +132,13 @@ function toggleRotation() {
 window.addEventListener("resize", () => {
   if (isRunning) {
     resizeCanvas();
-    drawPlanets();
+    drawPlanets(rotationAngle);
   }
 });
 
 window.addEventListener("load", () => {
   resizeCanvas();
-  drawPlanets();
+  drawPlanets(rotationAngle);
 });
 
 startScreen.addEventListener("touchstart", (e) => {
