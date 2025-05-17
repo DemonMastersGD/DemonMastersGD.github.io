@@ -1,0 +1,85 @@
+/* General reset */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #222244;
+  color: #eee;
+  font-family: Arial, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Start screen style */
+#startScreen {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #222244;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#startScreen h1 {
+  font-size: 3em;
+  margin: 0 0 20px;
+}
+
+#startScreen p {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+/* Container for the planets */
+#planetContainer {
+  display: flex;
+  gap: 80px;
+}
+
+/* Each planet style */
+.planet {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(255,255,255,0.4);
+}
+
+/* Fire planet - red/orange */
+#firePlanet {
+  background: radial-gradient(circle at 30% 30%, #ff5a36, #a1331f);
+  box-shadow: 0 0 20px #ff6f3d;
+}
+
+/* Ice planet - blue */
+#icePlanet {
+  background: radial-gradient(circle at 30% 30%, #36c2ff, #1b3c6f);
+  box-shadow: 0 0 20px #4dc7ff;
+}
+
+/* Canvas style */
+#gameCanvas {
+  display: none;
+  background-color: #111133;
+  margin: 0 auto;
+  display: block;
+  max-width: 90vw;
+  max-height: 90vw;
+  border-radius: 15px;
+  box-shadow: 0 0 25px #000a66;
+}
+
+/* Instructions below the canvas */
+#instructions {
+  display: none;
+  text-align: center;
+  font-size: 1.2em;
+  margin-top: 10px;
+  color: #ccc;
+  user-select: none;
+  -webkit-user-select: none;
+}
