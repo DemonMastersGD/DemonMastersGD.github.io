@@ -6,13 +6,16 @@ const startScreen = document.getElementById("startScreen");
 let centerX, centerY;
 let planet1, planet2;
 let rotating = true;
-let centerPlanet = 1; // 1 or 2
+let centerPlanet = 1;
 let angle = 0;
 let lastTimestamp = 0;
 
 const orbitRadius = 80;
 const planetRadius = 25;
 const speed = 0.002; // radians per ms
+
+let lastTapTime = 0;
+const cooldownTime = 500; // ms
 
 function resizeCanvas() {
   const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
@@ -23,11 +26,11 @@ function resizeCanvas() {
 }
 
 function initPlanets() {
-  planet1 = { x: centerX, y: centerY }; // Blue (1)
+  planet1 = { x: centerX, y: centerY };
   planet2 = {
     x: centerX + Math.cos(angle) * orbitRadius,
     y: centerY + Math.sin(angle) * orbitRadius
-  }; // Red (2)
+  };
 }
 
 function drawPlanet(x, y, color1, color2) {
@@ -56,9 +59,8 @@ function updatePositions(delta) {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  drawPlanet(planet1.x, planet1.y, "#36c2ff", "#1b3c6f"); // Blue
-  drawPlanet(planet2.x, planet2.y, "#ff5a36", "#a1331f"); // Red
+  drawPlanet(planet1.x, planet1.y, "#36c2ff", "#1b3c6f");
+  drawPlanet(planet2.x, planet2.y, "#ff5a36", "#a1331f");
 }
 
 function animate(timestamp) {
@@ -80,10 +82,13 @@ function startGame() {
 }
 
 function toggleCenter() {
+  const now = Date.now();
+  if (now - lastTapTime < cooldownTime) return; // prevent double taps
+  lastTapTime = now;
+
   rotating = false;
   centerPlanet = centerPlanet === 1 ? 2 : 1;
 
-  // Make current center stay, and other planet rotate smoothly from current position
   let center = centerPlanet === 1 ? planet1 : planet2;
   let orbiting = centerPlanet === 1 ? planet2 : planet1;
   angle = Math.atan2(orbiting.y - center.y, orbiting.x - center.x);
