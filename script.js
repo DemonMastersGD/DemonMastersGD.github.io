@@ -1,254 +1,200 @@
-"use strict";
+// ==== GLOBAL VARIABLES ====
 
-// DOM Elements
-const screens = {
-  mainMenu: document.getElementById("mainMenu"),
-  levelSelect: document.getElementById("levelSelect"),
-  gameScreen: document.getElementById("gameScreen"),
-  levelEditor: document.getElementById("levelEditor"),
-};
-const playBtn = document.getElementById("playBtn");
-const levelSelectBtn = document.getElementById("levelSelectBtn");
-const editorBtn = document.getElementById("editorBtn");
-const backBtns = document.querySelectorAll(".backBtn");
-
-const levelsGrid = document.getElementById("levelsGrid");
-const gameCanvas = document.getElementById("gameCanvas");
-const gameCtx = gameCanvas.getContext("2d");
-
-const editorCanvas = document.getElementById("editorCanvas");
-const editorCtx = editorCanvas.getContext("2d");
-const speedRange = document.getElementById("speedRange");
-const tileTypeBtn = document.getElementById("tileTypeBtn");
-const deleteTileBtn = document.getElementById("deleteTileBtn");
-const exportBtn = document.getElementById("exportBtn");
-const importBtn = document.getElementById("importBtn");
-const importFile = document.getElementById("importFile");
-
-// Constants
-const TILE_TYPES = [
-  "Straight",       // 0
-  "CurveCW",        // 1
-  "CurveCCW",       // 2
-  "Reverse",        // 3
-  "Teleport",       // 4
-  "Hold",           // 5
-];
-const TILE_TYPE_NAMES = {
-  Straight: "Straight",
-  CurveCW: "Curve CW",
-  CurveCCW: "Curve CCW",
-  Reverse: "Reverse",
-  Teleport: "Teleport",
-  Hold: "Hold",
-};
-
-const TILE_RADIUS = 25; // radius for drawing tiles in editor
-const GRID_ROWS = 7;
-const GRID_COLS = 7;
-
-// State
-let currentScreen = "mainMenu";
+let currentScreen = 'mainMenu';
 let currentLevelIndex = 0;
-let levels = [];
-let currentLevel = null; // { tiles: [...], speed: number }
+let animationFrameId = null;
+let gameRunning = false;
 
-let editorState = {
-  selectedTileType: 0,
-  speed: 1,
-  grid: [],
-};
+const levels = [
+  {
+    name: 'Level 1',
+    speed: 1,
+    blocks: [], // for editor - each block: {x, y}
+  },
+  {
+    name: 'Level 2',
+    speed: 1.5,
+    blocks: [],
+  },
+  {
+    name: 'Level 3',
+    speed: 2,
+    blocks: [],
+  },
+];
 
-let gameplayState = {
-  planets: [], // {x, y, color, angle, orbitingAround, orbitRadius}
-  rotatingPlanetIndex: 1,
-  orbitCenterIndex: 0,
-  camera: { x: 0, y: 0, zoom: 1 },
-  lastTapTime: 0,
-  tapCooldown: 500,
-  animationId: null,
-};
+// --- Canvas and contexts ---
+const gameCanvas = document.getElementById('gameCanvas');
+const gameCtx = gameCanvas.getContext('2d');
 
-// UTILITIES
+const editorCanvas = document.getElementById('editorCanvas');
+const editorCtx = editorCanvas.getContext('2d');
+
+// --- DOM elements ---
+const playBtn = document.getElementById('playBtn');
+const levelSelectBtn = document.getElementById('levelSelectBtn');
+const editorBtn = document.getElementById('editorBtn');
+const backBtns = document.querySelectorAll('.backBtn');
+const levelsGrid = document.getElementById('levelsGrid');
+
+const speedRange = document.getElementById('speedRange');
+const addBlockBtn = document.getElementById('addBlockBtn');
+const removeBlockBtn = document.getElementById('removeBlockBtn');
+const saveLevelBtn = document.getElementById('saveLevelBtn');
+const loadLevelBtn = document.getElementById('loadLevelBtn');
+
+// ==== UTILS ====
 
 function switchScreen(screenName) {
-  for (const key in screens) {
-    screens[key].classList.toggle("active", key === screenName);
-  }
+  document.querySelectorAll('.screen').forEach(screen => {
+    screen.classList.toggle('active', screen.id === screenName);
+  });
   currentScreen = screenName;
+  if (screenName !== 'gameScreen') stopGameplay();
+  if (screenName === 'levelSelect') renderLevelSelect();
+  if (screenName === 'levelEditor') loadLevelIntoEditor(currentLevelIndex);
 }
 
-function clamp(num, min, max) {
-  return Math.min(Math.max(num, min), max);
+// ==== GAMEPLAY STATE ====
+
+let rotationAngle = 0;
+let rotatingPlanet = 2; // 1 or 2, which planet rotates around the other
+let lastTapTime = 0;
+const tapCooldown = 500; // milliseconds
+
+// Particles around rotating planet
+const particles = [];
+const MAX_PARTICLES = 40;
+
+// Planet positions
+const center = { x: gameCanvas.width / 2, y: gameCanvas.height / 2 };
+const orbitRadius = 100;
+
+// Speed multiplier from level
+let speedMultiplier = 1;
+
+// ==== GAMEPLAY FUNCTIONS ====
+
+function createParticles() {
+  particles.length = 0;
+  for (let i = 0; i < MAX_PARTICLES; i++) {
+    particles.push({
+      angle: Math.random() * 2 * Math.PI,
+      radius: orbitRadius + 15 + Math.random() * 10,
+      size: 2 + Math.random() * 2,
+      speed: 0.01 + Math.random() * 0.02,
+      alpha: 0.5 + Math.random() * 0.5,
+    });
+  }
 }
 
-// ---------------------------
-// LEVEL MANAGEMENT
-
-// Sample levels (simple tile arrays and speed)
-levels = [
-  {
-    name: "Level 1",
-    speed: 1,
-    tiles: [
-      { type: "Straight" },
-      { type: "CurveCW" },
-      { type: "Straight" },
-      { type: "CurveCCW" },
-      { type: "Reverse" },
-      { type: "Hold" },
-    ],
-  },
-  {
-    name: "Level 2",
-    speed: 1.5,
-    tiles: [
-      { type: "CurveCCW" },
-      { type: "CurveCW" },
-      { type: "Straight" },
-      { type: "Teleport" },
-      { type: "Reverse" },
-      { type: "Hold" },
-    ],
-  },
-];
-
-// Render Level Select Buttons
-function renderLevelSelect() {
-  levelsGrid.innerHTML = "";
-  levels.forEach((level, i) => {
-    const btn = document.createElement("button");
-    btn.textContent = level.name;
-    btn.onclick = () => {
-      currentLevelIndex = i;
-      loadLevel(i);
-      switchScreen("gameScreen");
-      startGameplay();
-    };
-    levelsGrid.appendChild(btn);
+function updateParticles() {
+  particles.forEach(p => {
+    p.angle += p.speed * speedMultiplier;
+    if (p.angle > 2 * Math.PI) p.angle -= 2 * Math.PI;
   });
 }
 
-// Load level into gameplayState
-function loadLevel(index) {
-  currentLevel = JSON.parse(JSON.stringify(levels[index])); // deep clone
-  setupGameplay(currentLevel);
+function drawParticles(ctx, orbitingPos) {
+  particles.forEach(p => {
+    const x = orbitingPos.x + p.radius * Math.cos(p.angle);
+    const y = orbitingPos.y + p.radius * Math.sin(p.angle);
+    ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, 2 * Math.PI);
+    ctx.fill();
+  });
 }
 
-// ---------------------------
-// GAMEPLAY
+function drawPlanets(ctx, angle) {
+  // Positions depend on which rotates:
+  // rotatingPlanet is the planet moving around the other.
 
-function setupGameplay(level) {
-  gameplayState.planets = [
-    { x: 0, y: 0, color: "#00aaff", angle: 0, orbitingAround: null, orbitRadius: 0 }, // center planet
-    { x: 150, y: 0, color: "#ff5555", angle: 0, orbitingAround: 0, orbitRadius: 150 },  // orbiting planet
-  ];
-  gameplayState.rotatingPlanetIndex = 1;
-  gameplayState.orbitCenterIndex = 0;
-  gameplayState.camera = { x: 0, y: 0, zoom: 1 };
-  gameplayState.lastTapTime = 0;
-}
-
-function drawPlanet(ctx, x, y, color, radius = 20) {
-  // glow effect
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 20;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function draw() {
-  const ctx = gameCtx;
-  ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-  // Translate to camera center
-  ctx.save();
-  ctx.translate(gameCanvas.width / 2, gameCanvas.height / 2);
-  ctx.scale(gameplayState.camera.zoom, gameplayState.camera.zoom);
-  ctx.translate(-gameplayState.camera.x, -gameplayState.camera.y);
-
-  // Draw orbit path
-  let centerPlanet = gameplayState.planets[gameplayState.orbitCenterIndex];
-  let orbitingPlanet = gameplayState.planets[gameplayState.rotatingPlanetIndex];
-  ctx.strokeStyle = "#666";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(centerPlanet.x, centerPlanet.y, orbitingPlanet.orbitRadius, 0, Math.PI * 2);
-  ctx.stroke();
+  let planet1, planet2;
+  if (rotatingPlanet === 2) {
+    // Planet 1 is center, planet 2 rotates
+    planet1 = { x: center.x, y: center.y };
+    planet2 = {
+      x: center.x + orbitRadius * Math.cos(angle),
+      y: center.y + orbitRadius * Math.sin(angle),
+    };
+  } else {
+    // Planet 2 is center, planet 1 rotates
+    planet2 = { x: center.x, y: center.y };
+    planet1 = {
+      x: center.x + orbitRadius * Math.cos(angle),
+      y: center.y + orbitRadius * Math.sin(angle),
+    };
+  }
 
   // Draw planets
-  gameplayState.planets.forEach(p => {
-    drawPlanet(ctx, p.x, p.y, p.color);
-  });
+  ctx.fillStyle = '#3498db'; // blue planet 1
+  ctx.beginPath();
+  ctx.arc(planet1.x, planet1.y, 25, 0, 2 * Math.PI);
+  ctx.fill();
 
-  ctx.restore();
+  ctx.fillStyle = '#e74c3c'; // red planet 2
+  ctx.beginPath();
+  ctx.arc(planet2.x, planet2.y, 20, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Draw particles around rotating planet
+  if (rotatingPlanet === 2) {
+    drawParticles(ctx, planet2);
+  } else {
+    drawParticles(ctx, planet1);
+  }
 }
 
-function update(delta) {
-  // Rotate the orbiting planet
-  let now = performance.now();
-  if (gameplayState.rotatingPlanetIndex === null) return;
+function gameLoop() {
+  if (!gameRunning) return;
+  gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-  let rotIndex = gameplayState.rotatingPlanetIndex;
-  let centerIndex = gameplayState.orbitCenterIndex;
+  // Update rotation
+  rotationAngle += 0.02 * speedMultiplier;
+  if (rotationAngle > 2 * Math.PI) rotationAngle -= 2 * Math.PI;
 
-  let pRot = gameplayState.planets[rotIndex];
-  let pCenter = gameplayState.planets[centerIndex];
-  let speed = (currentLevel?.speed ?? 1) * 0.002;
+  // Update particles
+  updateParticles();
 
-  pRot.angle += speed * delta;
-  if (pRot.angle > Math.PI * 2) pRot.angle -= Math.PI * 2;
+  // Draw orbit circle (for clarity)
+  gameCtx.strokeStyle = '#0af';
+  gameCtx.lineWidth = 2;
+  gameCtx.beginPath();
+  gameCtx.arc(center.x, center.y, orbitRadius, 0, 2 * Math.PI);
+  gameCtx.stroke();
 
-  // Update position relative to center
-  pRot.x = pCenter.x + Math.cos(pRot.angle) * pRot.orbitRadius;
-  pRot.y = pCenter.y + Math.sin(pRot.angle) * pRot.orbitRadius;
+  // Draw planets + particles
+  drawPlanets(gameCtx, rotationAngle);
 
-  // Smooth camera follow center point between planets
-  gameplayState.camera.x += ((pCenter.x + pRot.x) / 2 - gameplayState.camera.x) * 0.1;
-  gameplayState.camera.y += ((pCenter.y + pRot.y) / 2 - gameplayState.camera.y) * 0.1;
-
-  // Keep zoom stable for now
-  gameplayState.camera.zoom += (1 - gameplayState.camera.zoom) * 0.1;
+  animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-function gameLoop(timestamp) {
-  if (!gameplayState.lastFrame) gameplayState.lastFrame = timestamp;
-  const delta = timestamp - gameplayState.lastFrame;
-  gameplayState.lastFrame = timestamp;
-
-  update(delta);
-  draw();
-
-  gameplayState.animationId = requestAnimationFrame(gameLoop);
+function startGameplay() {
+  if (gameRunning) return;
+  gameRunning = true;
+  rotationAngle = 0;
+  speedMultiplier = levels[currentLevelIndex].speed || 1;
+  rotatingPlanet = 2;
+  createParticles();
+  gameLoop();
 }
 
-// Tap handler for gameplay (swap rotation)
-function onGameTap() {
-  const now = performance.now();
-  if (now - gameplayState.lastTapTime < gameplayState.tapCooldown) return;
-  gameplayState.lastTapTime = now;
+function stopGameplay() {
+  gameRunning = false;
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+}
 
-  // Swap rotation: rotating planet becomes center, center becomes rotating
-  const { rotatingPlanetIndex, orbitCenterIndex, planets } = gameplayState;
-  if (rotatingPlanetIndex === null) return;
+// Tap handler for swapping rotation
+gameCanvas.addEventListener('pointerdown', e => {
+  if (!gameRunning) return;
 
-  // Swap roles
-  gameplayState.rotatingPlanetIndex = orbitCenterIndex;
-  gameplayState.orbitCenterIndex = rotatingPlanetIndex;
+  const now = Date.now();
+  if (now - lastTapTime < tapCooldown) return; // cooldown check
+  lastTapTime = now;
 
-  // Update orbit radius and angles for smooth continuation
-  const newRot = planets[gameplayState.rotatingPlanetIndex];
-  const newCenter = planets[gameplayState.orbitCenterIndex];
-  // Calculate new orbitRadius and adjust angles so planets keep their positions
-  const dx = newRot.x - newCenter.x;
-  const dy = newRot.y - newCenter.y;
-  newRot.orbitRadius = Math.sqrt(dx * dx + dy * dy);
-  newRot.angle = Math.atan2(dy, dx);
-
-  // Center planet stops orbiting
-  planets[gameplayState.orbitCenterIndex].angle = 0;
-  planets[gameplayState.orbitCenterIndex].x
+  // Swap rotating planet
+  rotatingPlanet = rotatingPlanet === 1 ?
