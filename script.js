@@ -2,7 +2,6 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const startScreen = document.getElementById("startScreen");
-const instructions = document.getElementById("instructions");
 
 let isRunning = false;
 
@@ -19,7 +18,7 @@ let firePlanetPos = { x: 0, y: 0 };
 let icePlanetPos = { x: 0, y: 0 };
 
 const planetRadius = 40;
-const orbitRadius = 80; // closer orbit
+const orbitRadius = 80; // closer planets
 
 function resizeCanvas() {
   const size = Math.min(window.innerWidth * 0.9, 600);
@@ -107,7 +106,6 @@ function startGame() {
     isRunning = true;
     startScreen.style.display = "none";
     canvas.style.display = "block";
-    instructions.style.display = "none";
     resizeCanvas();
     drawPlanets();
     requestAnimationFrame(animate);
@@ -121,8 +119,6 @@ function toggleRotation() {
     rotatingAroundFire = !rotatingAroundFire;
   }
 }
-
-// Remove all buttons — there aren’t any now, only tap anywhere to start/swap
 
 window.addEventListener("resize", () => {
   if (isRunning) {
