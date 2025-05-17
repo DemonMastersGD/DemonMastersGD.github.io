@@ -3,108 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>A Dance of Fire and Ice - Mini</title>
+<title>ADOFAI Clone</title>
 <style>
-  /* Basic reset */
-  * {
-    box-sizing: border-box;
+  body, html {
+    margin: 0; padding: 0; overflow: hidden; background: #111; font-family: sans-serif;
   }
-  body {
-    margin: 0; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #111;
-    color: #eee;
-    overflow: hidden;
-  }
-  .screen {
-    display: none;
-    padding: 20px;
-    height: 100vh;
-  }
-  .screen.active {
-    display: block;
-  }
-  button {
-    background: #222;
-    border: 2px solid #0af;
-    color: #0af;
-    padding: 12px 20px;
-    font-size: 18px;
-    margin: 10px;
-    cursor: pointer;
-    border-radius: 8px;
-    user-select: none;
-  }
-  button:hover {
-    background: #0af;
-    color: #111;
-  }
-  #levelsGrid button {
-    width: 120px;
-    margin: 8px;
+  #menu {
+    position: absolute; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: white;
   }
   #gameCanvas {
-    display: block;
+    display: none;
     background: #222;
-    margin: 0 auto;
-    border-radius: 10px;
-    touch-action: manipulation;
+    width: 100vw;
+    height: 100vh;
   }
-  #editorControls {
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+  button {
+    padding: 12px 24px;
+    font-size: 20px;
+    margin-top: 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: white;
+    transition: background 0.3s;
   }
-  #editorControls label {
-    margin-right: 8px;
-  }
-  #editorCanvas {
-    background: #222;
-    display: block;
-    margin: 20px auto 0;
-    border-radius: 10px;
+  button:hover {
+    background: #45a049;
   }
 </style>
 </head>
 <body>
 
-<!-- MAIN MENU -->
-<div id="mainMenu" class="screen active">
-  <h1>A Dance of Fire and Ice</h1>
-  <button id="playBtn">Play</button>
-  <button id="levelSelectBtn">Level Select</button>
-  <button id="editorBtn">Level Editor</button>
+<!-- Menu -->
+<div id="menu">
+  <h1>ADOFAI Clone</h1>
+  <button id="playButton">Play</button>
 </div>
 
-<!-- LEVEL SELECT -->
-<div id="levelSelect" class="screen">
-  <h1>Select Level</h1>
-  <div id="levelsGrid"></div>
-  <button class="backBtn">Back to Menu</button>
-</div>
-
-<!-- GAME SCREEN -->
-<div id="gameScreen" class="screen">
-  <h1>Gameplay</h1>
-  <canvas id="gameCanvas" width="600" height="400"></canvas>
-  <button class="backBtn">Back to Menu</button>
-</div>
-
-<!-- LEVEL EDITOR -->
-<div id="levelEditor" class="screen">
-  <h1>Level Editor</h1>
-  <div id="editorControls">
-    <label>Speed: <input type="range" id="speedRange" min="0.5" max="5" step="0.1" value="1"></label>
-    <button id="addBlockBtn">Add Block</button>
-    <button id="removeBlockBtn">Remove Block</button>
-    <button id="saveLevelBtn">Save Level</button>
-    <button id="loadLevelBtn">Load Level</button>
-  </div>
-  <canvas id="editorCanvas" width="600" height="400"></canvas>
-  <button class="backBtn">Back to Menu</button>
-</div>
+<!-- Canvas for gameplay -->
+<canvas id="gameCanvas"></canvas>
 
 <script src="script.js"></script>
+
 </body>
 </html>
