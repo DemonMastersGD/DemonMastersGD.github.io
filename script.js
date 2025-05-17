@@ -81,9 +81,9 @@ function startGame() {
   requestAnimationFrame(animate);
 }
 
-function toggleCenter() {
+function handleTap() {
   const now = Date.now();
-  if (now - lastTapTime < cooldownTime) return; // prevent double taps
+  if (now - lastTapTime < cooldownTime) return;
   lastTapTime = now;
 
   rotating = false;
@@ -101,6 +101,15 @@ window.addEventListener("resize", () => {
   initPlanets();
 });
 
-startScreen.addEventListener("mousedown", startGame);
-canvas.addEventListener("mousedown", toggleCenter);
-canvas.addEventListener("touchstart", toggleCenter, { passive: true });
+startScreen.addEventListener("click", startGame);
+
+// Handle both touch and mouse, but only register one
+let inputLocked = false;
+function registerTap(e) {
+  if (inputLocked) return;
+  inputLocked = true;
+  handleTap();
+  setTimeout(() => inputLocked = false, cooldownTime);
+}
+canvas.addEventListener("touchstart", registerTap, { passive: true });
+canvas.addEventListener("mousedown", registerTap);
