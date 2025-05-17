@@ -13,32 +13,37 @@ function startGame() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  let centerX = canvas.width / 2;
-  let centerY = canvas.height / 2;
-  let radius = 80;
+  let planet1 = { img: new Image(), x: 0, y: 0 }; // Blue
+  let planet2 = { img: new Image(), x: 0, y: 0 }; // Red
+  planet1.img.src = 'assets/planet-blue.png';
+  planet2.img.src = 'assets/planet-red.png';
+
+  let orbiting = 2; // Start with planet 2 orbiting planet 1
   let angle = 0;
-  let rotatingPlanet = 2; // 1=blue rotates, 2=red rotates
+  let radius = 100;
   let cooldown = false;
-
-  const bluePlanet = new Image();
-  bluePlanet.src = 'assets/planet-blue.png';
-
-  const redPlanet = new Image();
-  redPlanet.src = 'assets/planet-red.png';
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    let orbitX = centerX + Math.cos(angle) * radius;
-    let orbitY = centerY + Math.sin(angle) * radius;
+    let center, rotating;
 
-    if (rotatingPlanet === 1) {
-      ctx.drawImage(redPlanet, centerX - 20, centerY - 20, 40, 40);
-      ctx.drawImage(bluePlanet, orbitX - 20, orbitY - 20, 40, 40);
+    if (orbiting === 2) {
+      center = planet1;
+      rotating = planet2;
     } else {
-      ctx.drawImage(bluePlanet, centerX - 20, centerY - 20, 40, 40);
-      ctx.drawImage(redPlanet, orbitX - 20, orbitY - 20, 40, 40);
+      center = planet2;
+      rotating = planet1;
     }
+
+    center.x = canvas.width / 2;
+    center.y = canvas.height / 2;
+    rotating.x = center.x + Math.cos(angle) * radius;
+    rotating.y = center.y + Math.sin(angle) * radius;
+
+    // Draw
+    ctx.drawImage(planet1.img, planet1.x - 20, planet1.y - 20, 40, 40);
+    ctx.drawImage(planet2.img, planet2.x - 20, planet2.y - 20, 40, 40);
 
     angle += 0.02;
     requestAnimationFrame(draw);
@@ -47,13 +52,9 @@ function startGame() {
   canvas.addEventListener('pointerdown', () => {
     if (cooldown) return;
     cooldown = true;
-    rotatingPlanet = rotatingPlanet === 1 ? 2 : 1;
-    setTimeout(() => {
-      cooldown = false;
-    }, 500);
+    orbiting = orbiting === 1 ? 2 : 1;
+    setTimeout(() => cooldown = false, 500);
   });
 
-  bluePlanet.onload = redPlanet.onload = () => {
-    draw();
-  };
+  planet1.img.onload = planet2.img.onload = () => draw();
 }
