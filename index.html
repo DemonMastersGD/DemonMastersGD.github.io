@@ -1,14 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A Dance of Fire and Ice Clone</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>A Dance of Fire and Ice - Clone</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="startScreen" class="centered">Tap to Start</div>
+
+<!-- Main Menu -->
+<div id="mainMenu" class="screen active">
+  <h1>Dance of Fire and Ice</h1>
+  <button id="playBtn">Play</button>
+  <button id="levelSelectBtn">Level Select</button>
+  <button id="editorBtn">Level Editor</button>
+</div>
+
+<!-- Level Select -->
+<div id="levelSelect" class="screen">
+  <h2>Select Level</h2>
+  <div id="levelsGrid"></div>
+  <button class="backBtn">Back</button>
+</div>
+
+<!-- Game Screen -->
+<div id="gameScreen" class="screen">
   <canvas id="gameCanvas"></canvas>
-  <script src="script.js"></script>
+  <button class="backBtn">Back</button>
+</div>
+
+<!-- Level Editor -->
+<div id="levelEditor" class="screen">
+  <h2>Level Editor</h2>
+  <div id="editorControls">
+    <label>Speed: <input type="range" id="speedRange" min="0.5" max="3" step="0.1" value="1"></label>
+    <button id="tileTypeBtn">Tile: Straight</button>
+    <button id="deleteTileBtn">Delete Tile</button>
+    <button id="exportBtn">Export JSON</button>
+    <button id="importBtn">Import JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" />
+  </div>
+  <canvas id="editorCanvas"></canvas>
+  <button class="backBtn">Back</button>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
